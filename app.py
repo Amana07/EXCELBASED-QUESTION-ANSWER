@@ -11,10 +11,11 @@ import PyPDF2
 import re
 from nltk.tokenize import word_tokenize
 import requests
+import pandas as pd
 
 # Download NLTK data
 nltk.download('punkt')
-#some change from here
+
 def extract_text_from_pdf(pdf_file):
     text = ""
     with open(pdf_file, "rb") as file:
@@ -56,6 +57,17 @@ def process_pdf_folder(folder_path):
 
     return documents
 
+def process_excel_file(file_path):
+    text = ""
+    try:
+        df = pd.read_excel(file_path)
+        for column in df.columns:
+            text += " ".join(df[column].astype(str).values)
+    except Exception as e:
+        print(f"Error processing Excel file: {e}")
+    cleaned_text = clean_text(text)
+    return cleaned_text
+
 # Specify the folder path where the PDF files are located
 pdf_folder_path = "book"
 
@@ -83,13 +95,14 @@ embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
 db = Chroma.from_documents(document_chunk, embeddings)
 
 def main():
-    st.title("PDF Text Extraction and Question Answering")
+    st.title("PDF and Excel Text Extraction and Question Answering")
     
     # Sidebar
     pdf_folder_path = st.sidebar.text_input("Enter PDF Folder Path", "book")
 
     # File upload
     pdf_file = st.sidebar.file_uploader("Upload PDF File", type=["pdf"])
+    excel_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx", "xls"])
 
     if pdf_file:
         # Save the uploaded file to the specified folder
@@ -98,13 +111,24 @@ def main():
             f.write(pdf_file.read())
         st.success(f"Uploaded file '{pdf_file.name}' saved to '{upload_path}'.")
 
-    if st.sidebar.button("Process PDFs"):
+    if excel_file:
+        # Save the uploaded file to the specified folder
+        upload_path = os.path.join(pdf_folder_path, excel_file.name)
+        with open(upload_path, "wb") as f:
+            f.write(excel_file.read())
+        st.success(f"Uploaded file '{excel_file.name}' saved to '{upload_path}'.")
+
+    if st.sidebar.button("Process PDFs and Excels"):
         extracted_texts = process_pdf_folder(pdf_folder_path)
+        if excel_file:
+            excel_text = process_excel_file(upload_path)
+            extracted_texts.append(excel_text)
+        
         output_text = "\n".join(extracted_texts)
         output_file = "documents.txt"
         with open(output_file, "w", encoding="utf-8") as file:
             file.write(output_text)
-        st.success(f"Extracted text from PDFs in the folder has been saved to '{output_file}'.")
+        st.success(f"Extracted text from PDFs and Excels in the folder has been saved to '{output_file}'.")
 
     # Main content
     query = st.text_input("Enter your question:")
@@ -123,7 +147,7 @@ def main():
             message = f"{query}\nanswer on the basis of PDF GIVE right ANSWER\n{docs}if not in docs{docs}then say not in docs".strip()
 
             # Use Google Generative Language API to get the desired text
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyDUI__vq_DaIZRmJpebK2elYLbosaTXjUc"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=YOUR_API_KEY"
             headers = {"Content-Type": "application/json"}
             data = {"contents": [{"parts": [{"text": message}]}]}
 
@@ -135,10 +159,8 @@ def main():
                 st.write("Response:", desired_text)
 
                 if change_language:
-                    message1 = f"{query}\nanswer on the basis of docs\n{docs} if persent in {docs} translate into {new_language} ".strip()
-                   # Use Google Generative Language API to get the desired text
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyDUI__vq_DaIZRmJpebK2elYLbosaTXjUc"
-                    headers = {"Content-Type": "application/json"}
+                    message1 = f"{query}\nanswer on the basis of docs\n{docs} if present in {docs} translate into {new_language} ".strip()
+                    # Use Google Generative Language API to get the desired text
                     data = {"contents": [{"parts": [{"text": message1}]}]}
 
                     response = requests.post(url, headers=headers, json=data)
@@ -147,5 +169,6 @@ def main():
                     if 'candidates' in response_data and response_data['candidates']:
                         desired_text = response_data['candidates'][0]['content']['parts'][0]['text']
                         st.write("Response:", desired_text)
+
 if __name__ == "__main__":
     main()
