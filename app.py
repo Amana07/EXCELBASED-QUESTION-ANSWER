@@ -1,4 +1,3 @@
-
 import os
 import streamlit as st
 from langchain import PromptTemplate, HuggingFaceHub, LLMChain
@@ -15,7 +14,7 @@ import requests
 
 # Download NLTK data
 nltk.download('punkt')
-
+#some change from here
 def extract_text_from_pdf(pdf_file):
     text = ""
     with open(pdf_file, "rb") as file:
@@ -109,6 +108,10 @@ def main():
 
     # Main content
     query = st.text_input("Enter your question:")
+    change_language = st.checkbox("Change the language of the response?")
+
+    if change_language:
+        new_language = st.text_input("Enter the desired language:")
 
     if st.button("Get Answer"):
         embedding_vector = embeddings.embed_query(query)
@@ -117,7 +120,7 @@ def main():
         if not docs:
             st.warning("No relevant documents found.")
         else:
-            message = f"{query}\nanswer on the basis of PDF DOCS GIVE RIGHT ANSWER what are the products of apple ANS IS IPHONE, IPAD, MAC \n{docs}if not in docs{docs}then say not in doc".strip()
+            message = f"{query}\nanswer on the basis of PDF GIVE right ANSWER\n{docs}if not in docs{docs}then say not in docs".strip()
 
             # Use Google Generative Language API to get the desired text
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyDUI__vq_DaIZRmJpebK2elYLbosaTXjUc"
@@ -131,5 +134,18 @@ def main():
                 desired_text = response_data['candidates'][0]['content']['parts'][0]['text']
                 st.write("Response:", desired_text)
 
+                if change_language:
+                    message1 = f"{query}\nanswer on the basis of docs\n{docs} if persent in {docs} translate into {new_language} ".strip()
+                   # Use Google Generative Language API to get the desired text
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyDUI__vq_DaIZRmJpebK2elYLbosaTXjUc"
+                    headers = {"Content-Type": "application/json"}
+                    data = {"contents": [{"parts": [{"text": message1}]}]}
+
+                    response = requests.post(url, headers=headers, json=data)
+                    response_data = response.json()
+
+                    if 'candidates' in response_data and response_data['candidates']:
+                        desired_text = response_data['candidates'][0]['content']['parts'][0]['text']
+                        st.write("Response:", desired_text)
 if __name__ == "__main__":
     main()
