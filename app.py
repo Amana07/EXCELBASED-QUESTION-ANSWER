@@ -149,7 +149,7 @@ def main():
             message = f"{query}\nanswer on the basis of the documents\n{docs}if not in docs then say 'not in docs'".strip()
 
             # Use Google Generative Language API to get the desired text
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=YOUR_API_KEY"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyDUI__vq_DaIZRmJpebK2elYLbosaTXjUc"
             headers = {"Content-Type": "application/json"}
             data = {"contents": [{"parts": [{"text": message}]}]}
 
