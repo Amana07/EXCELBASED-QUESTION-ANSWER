@@ -28,6 +28,17 @@ def extract_text_from_pdf(pdf_file):
 
     return text
 
+def process_excel_file(file_path):
+    text = ""
+    try:
+        df = pd.read_excel(file_path)
+        for column in df.columns:
+            text += " ".join(df[column].astype(str).values)
+    except Exception as e:
+        print(f"Error processing Excel file: {e}")
+    cleaned_text = clean_text(text)
+    return cleaned_text
+
 def clean_text(text):
     text = re.sub(r"[^a-zA-Z0-9\s]", "", text)
     tokens = word_tokenize(text)
@@ -45,8 +56,9 @@ def limit_text(text, max_words):
     limited_text = " ".join(limited_tokens)
     return limited_text
 
-def process_pdf_folder(folder_path):
+def process_files(folder_path):
     pdf_files = [f for f in os.listdir(folder_path) if f.endswith(".pdf")]
+    excel_files = [f for f in os.listdir(folder_path) if f.endswith((".xlsx", ".xls"))]
     documents = []
 
     for pdf_file in pdf_files:
@@ -54,25 +66,20 @@ def process_pdf_folder(folder_path):
         pdf_text = extract_text_from_pdf(pdf_path)
         cleaned_text = clean_text(pdf_text)
         documents.append(cleaned_text)
+        
+    for excel_file in excel_files:
+        excel_path = os.path.join(folder_path, excel_file)
+        excel_text = process_excel_file(excel_path)
+        cleaned_text = clean_text(excel_text)
+        documents.append(cleaned_text)
 
     return documents
 
-def process_excel_file(file_path):
-    text = ""
-    try:
-        df = pd.read_excel(file_path)
-        for column in df.columns:
-            text += " ".join(df[column].astype(str).values)
-    except Exception as e:
-        print(f"Error processing Excel file: {e}")
-    cleaned_text = clean_text(text)
-    return cleaned_text
+# Specify the folder path where the PDF and Excel files are located
+folder_path = "book"
 
-# Specify the folder path where the PDF files are located
-pdf_folder_path = "book"
-
-# Process the PDF folder and get the extracted and cleaned text from each PDF
-extracted_texts = process_pdf_folder(pdf_folder_path)
+# Process the folder and get the extracted and cleaned text from each file
+extracted_texts = process_files(folder_path)
 
 # Join the elements of the extracted_texts list with newline characters to create a single string
 output_text = "\n".join(extracted_texts)
@@ -98,7 +105,7 @@ def main():
     st.title("PDF and Excel Text Extraction and Question Answering")
     
     # Sidebar
-    pdf_folder_path = st.sidebar.text_input("Enter PDF Folder Path", "book")
+    folder_path = st.sidebar.text_input("Enter Folder Path", "book")
 
     # File upload
     pdf_file = st.sidebar.file_uploader("Upload PDF File", type=["pdf"])
@@ -106,29 +113,25 @@ def main():
 
     if pdf_file:
         # Save the uploaded file to the specified folder
-        upload_path = os.path.join(pdf_folder_path, pdf_file.name)
+        upload_path = os.path.join(folder_path, pdf_file.name)
         with open(upload_path, "wb") as f:
             f.write(pdf_file.read())
         st.success(f"Uploaded file '{pdf_file.name}' saved to '{upload_path}'.")
 
     if excel_file:
         # Save the uploaded file to the specified folder
-        upload_path = os.path.join(pdf_folder_path, excel_file.name)
+        upload_path = os.path.join(folder_path, excel_file.name)
         with open(upload_path, "wb") as f:
             f.write(excel_file.read())
         st.success(f"Uploaded file '{excel_file.name}' saved to '{upload_path}'.")
 
-    if st.sidebar.button("Process PDFs and Excels"):
-        extracted_texts = process_pdf_folder(pdf_folder_path)
-        if excel_file:
-            excel_text = process_excel_file(upload_path)
-            extracted_texts.append(excel_text)
-        
+    if st.sidebar.button("Process Files"):
+        extracted_texts = process_files(folder_path)
         output_text = "\n".join(extracted_texts)
         output_file = "documents.txt"
         with open(output_file, "w", encoding="utf-8") as file:
             file.write(output_text)
-        st.success(f"Extracted text from PDFs and Excels in the folder has been saved to '{output_file}'.")
+        st.success(f"Extracted text from files in the folder has been saved to '{output_file}'.")
 
     # Main content
     query = st.text_input("Enter your question:")
