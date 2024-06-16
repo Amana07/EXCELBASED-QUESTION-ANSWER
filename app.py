@@ -70,8 +70,7 @@ def process_files(folder_path):
     for excel_file in excel_files:
         excel_path = os.path.join(folder_path, excel_file)
         excel_text = process_excel_file(excel_path)
-        cleaned_text = clean_text(excel_text)
-        documents.append(cleaned_text)
+        documents.append(excel_text)
 
     return documents
 
@@ -147,7 +146,7 @@ def main():
         if not docs:
             st.warning("No relevant documents found.")
         else:
-            message = f"{query}\nanswer on the basis of PDF GIVE right ANSWER\n{docs}if not in docs{docs}then say not in docs".strip()
+            message = f"{query}\nanswer on the basis of the documents\n{docs}if not in docs then say 'not in docs'".strip()
 
             # Use Google Generative Language API to get the desired text
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=YOUR_API_KEY"
@@ -162,7 +161,7 @@ def main():
                 st.write("Response:", desired_text)
 
                 if change_language:
-                    message1 = f"{query}\nanswer on the basis of docs\n{docs} if present in {docs} translate into {new_language} ".strip()
+                    message1 = f"{query}\nanswer on the basis of docs\n{docs} if present in docs translate into {new_language}".strip()
                     # Use Google Generative Language API to get the desired text
                     data = {"contents": [{"parts": [{"text": message1}]}]}
 
