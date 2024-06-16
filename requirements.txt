@@ -1,0 +1,14 @@
+gradio
+bardapi
+openai
+langchain
+langchain_community
+huggingface_hub
+sentence_transformers
+chromadb==0.3.29
+PyPDF2
+nltk
+streamlit
+git+https://github.com/huggingface/transformers.git
+accelerate
+datasets[audio]
